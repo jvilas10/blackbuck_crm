@@ -1,0 +1,61 @@
+name: CI and staging
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_staging:
+        description: Deploy the verified main commit to staging
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  staging:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_staging
+    needs: checks
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency: blackbuck-crm-staging
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Deploy and check staging
+        run: |
+          set -euo pipefail
+          : "${VERCEL_ORG_ID:?}" "${VERCEL_PROJECT_ID:?}" "${VERCEL_TOKEN:?}"
+          url="$(npx --yes vercel@65.15.0 deploy --prod --yes --token "$VERCEL_TOKEN")"
+          case "$url" in https://*.vercel.app) ;; *) exit 1 ;; esac
+          headers=()
+          if [[ -n "$VERCEL_PROTECTION_BYPASS" ]]; then
+            headers+=(-H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS")
+          fi
+          curl --fail --silent --show-error --retry 4 "${headers[@]}" "$url/api/health" | jq -e '.status == "ok"'
+          curl --fail --silent --show-error --retry 4 "${headers[@]}" "$url/" | grep -F 'BlackBuck CRM' >/dev/null
+          printf '[Staging deployment](%s)\n' "$url" >> "$GITHUB_STEP_SUMMARY"
