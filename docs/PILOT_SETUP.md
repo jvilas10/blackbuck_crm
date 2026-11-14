@@ -49,6 +49,40 @@ Migration `002-accounts` creates the four collections, validates membership shap
 
 Run `npm run db:verify` after setup to check migration markers, all expected account fixtures, strict validators, and required indexes without changing database records. On 14 November 2026, Atlas development setup succeeded twice and verification passed: 2 agencies, 3 clients, 10 users, and 10 memberships. Development credentials are in Git-ignored `.env.local`.
 
+## T08 accounts and authentication
+
+Run `npm run db:setup` to apply migration `003-auth`. Configure `BETTER_AUTH_URL` (locally `http://localhost:3000`) and a random `BETTER_AUTH_SECRET` of at least 32 characters in `.env.local`. Credentials remain server-side. Better Auth uses separate `auth_users`, `auth_accounts`, `auth_sessions`, and `auth_verifications` collections; CRM memberships continue to reference the T07 identity via `crmUserId`. Passwords use Better Auth's password hashing implementation. Public signup and unrelated auth endpoints are disabled.
+
+For the first development operator, run `npm run accounts:bootstrap -- operator@example.invalid`. Open the private link in `.local/operator-invitation.txt`, choose a name and password, then sign in at `/sign-in`. The bootstrap is development-only and refuses to run once a non-fixture operator exists. Synthetic fixture memberships do not grant login credentials. The `.local` directory is Git-ignored; do not publish invitation links.
+
+At `/account`, a platform operator creates agencies and invites agency administrators. Agency administrators create their own clients and invite client managers, assigned-client account managers, and salespeople. Client managers can invite salespeople only within their own clients. Server checks enforce these provisioning boundaries. More extensive enquiry authorization belongs to T09.
+
+Invitations expire after 48 hours. Tokens are random, stored only as hashes, and carried in a URL fragment to avoid request URLs and referrers. Acceptance atomically consumes the invitation and creates the auth identity, password account, CRM identity, and scoped membership. Existing accounts must sign in first. Invalid, expired, cancelled, replayed, or no-longer-authorized invitations fail. The local workflow displays a private link for manual delivery; no emails are sent and no email provider is required for local acceptance tests. Production email delivery remains a deployment prerequisite.
+
+Sessions last seven days and refresh after one day of activity. Database session checks and current memberships protect the account screen and provisioning API; cookie caching is disabled. Users can sign out the current device or all other devices. Revoking a membership deletes that scope, cancels matching pending invitations, and ends all current sessions for that user. If other memberships remain, the user can sign in again with those scopes. Auth rate limits remain enabled; deployment must configure a trusted proxy/IP strategy before shared production use.
+
+`npm run auth:verify` exercises the real database and Better Auth handler with unique synthetic identities, and removes only its own records afterward. It verifies provisioning, invite-only signup, existing-user acceptance, replay/concurrent acceptance, expiration/cancellation, scope boundaries, login, session persistence, other-device logout, logout, and access revocation. It is restricted to development and intentionally spaces logins to respect the real rate limiter.
+
+References: [Better Auth MongoDB adapter](https://better-auth.com/docs/adapters/mongo), [session management](https://better-auth.com/docs/concepts/session-management), and [Next.js integration](https://better-auth.com/docs/integrations/next).
+
+## T09 server-side permissions
+
+`lib/authorization.mjs` resolves membership grants from stored CRM identities and checks that referenced agencies and clients exist and belong together. Session validation, the account directory, provisioning writes, and invitation acceptance all use fresh database grants. Request-provided roles are never authoritative. Platform operations can provision account metadata, but cannot read customer enquiries, sales data, reports, or exports; exceptional support access remains disabled pending T10's approval and audit flow.
+
+| Role | Customer reads | Sales updates | Assignment | Reports / export rows |
+| --- | --- | --- | --- | --- |
+| Agency administrator | Own agency | Requires an additional sales role | Own agency | Own agency |
+| Agency account manager | Assigned clients | Assigned clients only with explicit follow-up grant | Assigned clients | Assigned clients |
+| Client sales manager | Own client | Own client | Own client | Own client |
+| Salesperson | Own assigned enquiries | Own assigned enquiries | Denied | Denied |
+| Platform operations | Denied | Denied | Denied | Denied |
+
+`lib/enquiry-access.mjs` is the guarded persistence boundary for future enquiry features. Reads, record lookup, sales updates, assignment, grouped counts, and export rows include server-generated scope predicates in the actual MongoDB operation. Assignment validates the target user's current client-scoped sales eligibility. Sales updates cannot change tenant/client/owner fields or accept arbitrary MongoDB operators. Record IDs outside the allowed scope return the same not-found error as nonexistent records. Explicit unauthorized client filters are denied. Lists and export rows are bounded; exports use a limited field projection.
+
+T09 supplies the permissions foundation, not the T12 enquiry model, T19 history/pipeline workflow, T22 campaign metrics, or a public export endpoint. Those tasks must use this boundary and add their domain validation/history. In particular, the internal grouped-count operation is not the final historical Qualified/Won campaign calculation. No new customer-data HTTP routes are exposed by T09.
+
+Run `npm run permissions:verify` in development for real Atlas isolation tests. It clones synthetic role fixtures, uses a uniquely named disposable enquiry collection, and removes only its own data. Tests include two agencies and two clients in one agency; own/other/unassigned enquiries; cross-scope reads and writes; assignment targets; reports/exports; explicit follow-up grants; forged roles; malformed client-agency memberships; and revocation. `npm test` includes the pure permission matrix tests. Staging QA remains T11.
+
 ## T06 GitHub Actions and staging
 
 1. Push the project to the configured GitHub remote. Open a test PR and check that lint, type check, tests, and production build pass. Require the `checks` job on main.

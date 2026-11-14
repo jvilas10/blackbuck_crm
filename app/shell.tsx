@@ -10,6 +10,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <Link className="brand" href="/">BlackBuck <span>CRM</span></Link>
           <nav aria-label="Main navigation">
             <Link className="nav-link" href="/" aria-current="page">Overview</Link>
+            <Link className="nav-link" href="/account">Account and team</Link>
           </nav>
         </header>
         <main id="content" tabIndex={-1}>{children}</main>

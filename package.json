@@ -13,10 +13,14 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test",
     "db:setup": "node scripts/setup-db.mjs",
-    "db:verify": "node scripts/verify-accounts.mjs"
+    "db:verify": "node scripts/verify-accounts.mjs",
+    "accounts:bootstrap": "node scripts/bootstrap-operator.mjs",
+    "auth:verify": "node scripts/verify-auth.mjs",
+    "permissions:verify": "node scripts/verify-permissions.mjs"
   },
   "dependencies": {
     "@next/env": "16.4.6",
+    "better-auth": "^1.7.23",
     "mongodb": "7.9.0",
     "next": "16.4.6",
     "react": "19.3.1",
