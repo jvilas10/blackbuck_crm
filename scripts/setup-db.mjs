@@ -1,6 +1,7 @@
 import nextEnv from "@next/env";
 import { MongoClient } from "mongodb";
 import { resolveDatabaseTarget } from "./db-target.mjs";
+import { setupAccounts } from "./setup-accounts.mjs";
 
 async function setup() {
   nextEnv.loadEnvConfig(process.cwd(), true);
@@ -21,6 +22,14 @@ async function setup() {
       );
       await migrations.updateOne(
         { _id: "001-bootstrap" },
+        { $setOnInsert: { appliedAt: new Date() } },
+        { upsert: true },
+      );
+    }
+    if (!(await migrations.findOne({ _id: "002-accounts" }))) {
+      await setupAccounts(db);
+      await migrations.updateOne(
+        { _id: "002-accounts" },
         { $setOnInsert: { appliedAt: new Date() } },
         { upsert: true },
       );

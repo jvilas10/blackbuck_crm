@@ -31,7 +31,23 @@ See [Meta's lead webhook guide](https://developers.facebook.com/docs/graph-api/w
 
 1. Create development and staging Atlas projects and clusters in Mumbai. Provision a separate runtime user in each with access scoped to `blackbuck_crm_dev` or `blackbuck_crm_staging`. Use a separate scoped setup user authorized to create indexes and write migration records. Configure each project's network access for the actual developer or staging egress. Keep staging restricted to synthetic data.
 2. For a local MongoDB instance, copy `.env.example` to `.env.local`. For development Atlas, use its development URI instead. To initialize staging, inject `CRM_ENV=staging` and the staging setup user's SRV connection string as process environment variables in an authorized terminal. Enter real credentials through the secret store or local environment.
-3. Run `npm run db:setup` twice for each target. Verify each database contains one `001-bootstrap` migration record, one synthetic fixture, and the unique `fixture_key_unique` index. Test that each runtime user can only access its own database and record the results. The setup script deliberately accepts only development and staging. T07 and later tasks introduce business collections.
+3. Run `npm run db:setup` twice for each target. Verify each database contains one record per migration, one bootstrap fixture with the unique `fixture_key_unique` index, and the account fixtures below. Verify that each runtime database user can access only its own database. The setup script accepts development and staging.
+
+### T07 account model
+
+Agencies are tenants. Each client account belongs to one agency. Users are shared identities whose memberships grant roles within a scope. A user can hold memberships in several scopes. An agency account manager has one membership per assigned client.
+
+| PRD | Role | Membership scope and intended permissions |
+| --- | --- | --- |
+| R01 | Agency administrator | One agency. Create clients, invite staff and client managers, manage form connections and assignments, and see agency reports. |
+| R02 | Agency account manager | One assigned client per membership. View reports and enquiries and reassign leads within that client. Sales follow-up requires the explicit grant on that membership. |
+| R03 | Client sales manager | One client. Invite salespeople, view and assign enquiries, and review follow-ups and reports. |
+| R04 | Salesperson | One client, with record access limited to enquiries assigned to the user. Log outreach, schedule the next action, and update the pipeline. |
+| R05 | Platform operations | Platform scope. Provision agencies and monitor health. Exceptional access to customer records requires separate authorization and an audit trail. |
+
+Migration `002-accounts` creates the four collections, validates membership shape for each role, and adds unique indexes for user emails and membership scopes. Fixture IDs and emails are synthetic. Agency A has two clients and Agency B has one, with two salespeople in Client A1 and account managers covering both values of the follow-up grant. MongoDB validates each document independently. Membership writes must verify that referenced users and accounts exist and that the client belongs to the given agency. Session handling and authorization enforcement are tracked in T08–T09.
+
+Run `npm run db:verify` after setup to check migration markers, all expected account fixtures, strict validators, and required indexes without changing database records. On 14 November 2026, Atlas development setup succeeded twice and verification passed: 2 agencies, 3 clients, 10 users, and 10 memberships. Development credentials are in Git-ignored `.env.local`.
 
 ## T06 GitHub Actions and staging
 
