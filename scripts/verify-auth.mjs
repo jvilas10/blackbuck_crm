@@ -100,6 +100,8 @@ async function verify() {
     await db.collection("memberships").deleteMany({ userId: { $in: profileIds } });
     await db.collection("users").deleteMany({ _id: { $in: profileIds } });
     await db.collection("invitations").deleteMany({ email: { $in: emails } });
+    await db.collection("audit_events").deleteMany({ actorId: { $in: profileIds } });
+    await db.collection("admin_locks").deleteMany({ _id: { $in: agencyIds } });
     await db.collection("client_accounts").deleteMany({ agencyId: { $in: agencyIds } });
     await db.collection("agencies").deleteMany({ _id: { $in: agencyIds } });
     await client.close();

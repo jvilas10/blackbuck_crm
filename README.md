@@ -29,3 +29,7 @@ The `/account` screen supports agency/client provisioning, scoped invitations, i
 ## Server-side permissions
 
 T09 resolves current memberships from MongoDB and validates agency/client relationships before granting access. Future enquiry services must use `lib/enquiry-access.mjs` for scoped reads, sales updates, assignment, reports, and export queries. Platform provisioning does not grant access to customer records. Run `npm run permissions:verify` for the isolated Atlas permission tests; see the [permission matrix and integration contract](docs/PILOT_SETUP.md#t09-server-side-permissions). Enquiry models, workflow history, campaign reporting, and public export features remain separate tasks.
+
+## Administration
+
+T10 adds client renaming, role/grant editing, saved client context, scoped audit history, and approved one-hour read-only support access to `/account`. Run `npm run db:setup` to apply migration 004, then `npm run administration:verify` for development Atlas integration checks. See the [T10 runbook](docs/PILOT_SETUP.md#t10-administration-and-exceptional-support) for permissions, approval rules, and verification details.

@@ -67,7 +67,7 @@ References: [Better Auth MongoDB adapter](https://better-auth.com/docs/adapters/
 
 ## T09 server-side permissions
 
-`lib/authorization.mjs` resolves membership grants from stored CRM identities and checks that referenced agencies and clients exist and belong together. Session validation, the account directory, provisioning writes, and invitation acceptance all use fresh database grants. Request-provided roles are never authoritative. Platform operations can provision account metadata, but cannot read customer enquiries, sales data, reports, or exports; exceptional support access remains disabled pending T10's approval and audit flow.
+`lib/authorization.mjs` resolves membership grants from stored CRM identities and checks that referenced agencies and clients exist and belong together. Session validation, the account directory, provisioning writes, and invitation acceptance all use fresh database grants. Request-provided roles are never authoritative. Platform operations can provision account metadata, but ordinary customer enquiry, sales, report, and export access remains denied. T10 adds a separate approved, audited, read-only support path described below.
 
 | Role | Customer reads | Sales updates | Assignment | Reports / export rows |
 | --- | --- | --- | --- | --- |
@@ -82,6 +82,20 @@ References: [Better Auth MongoDB adapter](https://better-auth.com/docs/adapters/
 T09 supplies the permissions foundation, not the T12 enquiry model, T19 history/pipeline workflow, T22 campaign metrics, or a public export endpoint. Those tasks must use this boundary and add their domain validation/history. In particular, the internal grouped-count operation is not the final historical Qualified/Won campaign calculation. No new customer-data HTTP routes are exposed by T09.
 
 Run `npm run permissions:verify` in development for real Atlas isolation tests. It clones synthetic role fixtures, uses a uniquely named disposable enquiry collection, and removes only its own data. Tests include two agencies and two clients in one agency; own/other/unassigned enquiries; cross-scope reads and writes; assignment targets; reports/exports; explicit follow-up grants; forged roles; malformed client-agency memberships; and revocation. `npm test` includes the pure permission matrix tests. Staging QA remains T11.
+
+## T10 administration and exceptional support
+
+The `/account` screen includes client listing/renaming, invitations, role and follow-up-grant editing, membership revocation, saved client context, support requests, and audit history. Client context filters account lists and retains agency-wide memberships for the selected client's agency; it never supplies authorization. Clear the selection to see all permitted clients. Refresh account reloads current permissions, support state, and audit events. Timestamps hydrate safely into the browser's locale and timezone.
+
+Agency administrators manage their own agency's client roles, while client sales managers manage salesperson invitations and access only for their own clients. Platform operators provision agency administrators. Users cannot edit/revoke their own membership. Role changes invalidate the affected user's sessions and cancel outstanding invitations in the affected scope. Stale edits return a conflict; a transaction lock prevents concurrent removals from deleting the final agency administrator.
+
+An operator requests support access for one client with a reason. Pending requests expire after 24 hours. A different agency administrator or client sales manager for that client approves, rejects, or revokes the request; operators can revoke their own requests but cannot self-approve. Approval lasts one hour. Each `POST /api/support-records` revalidates the operator, current approver authority, client pair, grant ownership, expiry and status. It returns at most 100 projected enquiry records and commits the read audit before returning data. Revocation or loss of approver authority blocks further reads. Ordinary T09 operator permissions remain unchanged. The screen shows an empty result until enquiries exist; the full enquiry model/workflow is a later task.
+
+Audit events cover agency/client creation, client renames, invitations, membership changes, support decisions/reads, and client selection. Agency admins see their agency, client managers their client, and operators their own events (latest 100). Passwords, invitation tokens and enquiry payloads are excluded from audit details. Audit retention/export tooling is outside T10.
+
+Run `npm run db:setup` before using these actions. Migration `004-administration` creates audit validation/indexes, support indexes, user preferences and administrator locks. It was applied to `blackbuck_crm_dev` and safely rerun on 16 November 2026.
+
+Run `npm run administration:verify` with the development environment configured. Tests clone unique synthetic fixtures, use an isolated disposable enquiry collection, and remove their records in cleanup. Coverage includes client selection/renaming, tenant isolation, stale edits, role/grant restrictions, session invalidation, invitation cancellation, support approval/rejection/expiry/revocation, revoked approver authority, projected reads, audit scopes, normal operator denial, and concurrent last-admin protection. T08/T09 integration regressions also passed. Browser checks verified context persistence across reload, client renaming, follow-up role editing, support approval/read/audit/revocation and sign-out. Staging QA is T11 and remains deferred with deployment.
 
 ## T06 GitHub Actions and staging
 
