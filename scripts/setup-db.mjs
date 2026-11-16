@@ -3,6 +3,7 @@ import { MongoClient } from "mongodb";
 import { resolveDatabaseTarget } from "./db-target.mjs";
 import { setupAccounts } from "./setup-accounts.mjs";
 import { setupAuth } from "./setup-auth.mjs";
+import { setupAdministration } from "./setup-administration.mjs";
 
 async function setup() {
   nextEnv.loadEnvConfig(process.cwd(), true);
@@ -38,6 +39,10 @@ async function setup() {
     if (!(await migrations.findOne({ _id: "003-auth" }))) {
       await setupAuth(db);
       await migrations.updateOne({ _id: "003-auth" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
+    }
+    if (!(await migrations.findOne({ _id: "004-administration" }))) {
+      await setupAdministration(db);
+      await migrations.updateOne({ _id: "004-administration" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
     }
     console.log(`Database setup verified for ${environment} (${dbName}).`);
   } finally {
