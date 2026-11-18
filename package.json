@@ -17,7 +17,8 @@
     "accounts:bootstrap": "node scripts/bootstrap-operator.mjs",
     "auth:verify": "node scripts/verify-auth.mjs",
     "permissions:verify": "node scripts/verify-permissions.mjs",
-    "administration:verify": "node scripts/verify-administration.mjs"
+    "administration:verify": "node scripts/verify-administration.mjs",
+    "access:verify": "node scripts/verify-access.mjs"
   },
   "dependencies": {
     "@next/env": "16.4.6",

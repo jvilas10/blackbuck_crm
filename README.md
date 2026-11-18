@@ -33,3 +33,7 @@ T09 resolves current memberships from MongoDB and validates agency/client relati
 ## Administration
 
 T10 adds client renaming, role/grant editing, saved client context, scoped audit history, and approved one-hour read-only support access to `/account`. Run `npm run db:setup` to apply migration 004, then `npm run administration:verify` for development Atlas integration checks. See the [T10 runbook](docs/PILOT_SETUP.md#t10-administration-and-exceptional-support) for permissions, approval rules, and verification details.
+
+## Access QA preparation
+
+Run `npm run access:verify` for the combined development access rehearsal (unit tests and T08–T10 Atlas integration suites). It writes a sanitized report to `.local/t11-development-evidence.json`. See the [T11 QA matrix](docs/T11_QA.md) for PRD A04 coverage and deployed browser/HTTP checks. A development pass does not complete T11: staging deployment, isolated credentials, and QA execution remain required.

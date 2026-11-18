@@ -4,6 +4,7 @@ import { resolveDatabaseTarget } from "./db-target.mjs";
 import { setupAccounts } from "./setup-accounts.mjs";
 import { setupAuth } from "./setup-auth.mjs";
 import { setupAdministration } from "./setup-administration.mjs";
+import { setupCrm } from "./setup-crm.mjs";
 
 async function setup() {
   nextEnv.loadEnvConfig(process.cwd(), true);
@@ -43,6 +44,10 @@ async function setup() {
     if (!(await migrations.findOne({ _id: "004-administration" }))) {
       await setupAdministration(db);
       await migrations.updateOne({ _id: "004-administration" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
+    }
+    if (!(await migrations.findOne({ _id: "005-crm-model" }))) {
+      await setupCrm(db);
+      await migrations.updateOne({ _id: "005-crm-model" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
     }
     console.log(`Database setup verified for ${environment} (${dbName}).`);
   } finally {
