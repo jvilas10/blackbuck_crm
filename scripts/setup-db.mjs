@@ -1,6 +1,10 @@
 import nextEnv from "@next/env";
 import { MongoClient } from "mongodb";
 import { resolveDatabaseTarget } from "./db-target.mjs";
+import { setupAccounts } from "./setup-accounts.mjs";
+import { setupAuth } from "./setup-auth.mjs";
+import { setupAdministration } from "./setup-administration.mjs";
+import { setupCrm } from "./setup-crm.mjs";
 
 async function setup() {
   nextEnv.loadEnvConfig(process.cwd(), true);
@@ -24,6 +28,26 @@ async function setup() {
         { $setOnInsert: { appliedAt: new Date() } },
         { upsert: true },
       );
+    }
+    if (!(await migrations.findOne({ _id: "002-accounts" }))) {
+      await setupAccounts(db);
+      await migrations.updateOne(
+        { _id: "002-accounts" },
+        { $setOnInsert: { appliedAt: new Date() } },
+        { upsert: true },
+      );
+    }
+    if (!(await migrations.findOne({ _id: "003-auth" }))) {
+      await setupAuth(db);
+      await migrations.updateOne({ _id: "003-auth" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
+    }
+    if (!(await migrations.findOne({ _id: "004-administration" }))) {
+      await setupAdministration(db);
+      await migrations.updateOne({ _id: "004-administration" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
+    }
+    if (!(await migrations.findOne({ _id: "005-crm-model" }))) {
+      await setupCrm(db);
+      await migrations.updateOne({ _id: "005-crm-model" }, { $setOnInsert: { appliedAt: new Date() } }, { upsert: true });
     }
     console.log(`Database setup verified for ${environment} (${dbName}).`);
   } finally {

@@ -19,6 +19,15 @@ nav { margin-top: 32px; }
 .nav-link { display: block; padding: 12px; border-radius: 8px; background: var(--accent); color: #111; text-decoration: none; font-weight: 650; }
 main { padding: clamp(24px, 5vw, 64px); }
 h1 { margin: 0 0 24px; font-size: 2rem; }
+form { display: grid; gap: 16px; margin: 24px 0; max-width: 480px; }
+label { display: grid; gap: 6px; font-weight: 600; }
+input, select, button { font: inherit; padding: 10px 12px; border: 1px solid #999; border-radius: 6px; }
+input, select { max-width: 100%; min-width: 0; }
+button { cursor: pointer; background: #fa7627; color: #111; margin: 4px; }
+button:disabled { opacity: .6; cursor: wait; }
+.account-grid { display: grid; gap: 24px; }
+.panel p + p { margin-top: 12px; }
+.nav-link + .nav-link { margin-top: 8px; }
 h2 { margin: 0 0 10px; font-size: 1.125rem; }
 .panel { border: 1px solid #dedede; border-radius: 12px; padding: 24px; max-width: 740px; }
 .panel p { margin: 0; color: #555; line-height: 1.5; }
@@ -28,3 +37,12 @@ h2 { margin: 0 0 10px; font-size: 1.125rem; }
   .sidebar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 18px; }
   nav { margin-top: 0; }
 }
+
+.admin-row { border-top: 1px solid #dedede; margin-top: 20px; padding-top: 16px; overflow-wrap: anywhere; }
+.admin-row h3 { font-size: 1rem; margin: 0 0 8px; }
+.admin-row small { font-weight: normal; }
+.check-label { display: flex; align-items: center; }
+.audit-list { padding-left: 20px; }
+.audit-list li { padding: 12px 0; border-bottom: 1px solid #eee; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; }
+.account-notice:not(:empty) { position: sticky; bottom: 16px; background: #fff3e9; padding: 16px; border: 1px solid #fa7627; border-radius: 8px; order: -1; z-index: 2; }
